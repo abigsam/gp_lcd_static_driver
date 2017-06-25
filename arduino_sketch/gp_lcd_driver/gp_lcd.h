@@ -4,7 +4,7 @@
 //
 //==============================================================================================
 //  Author:         abigsam@gmail.com (AR)
-//  Project Name:   gp_lcd_static_driver
+//  Project Name:   gp_lcd
 //  GitHub:         https://github.com/abigsam/gp_lcd_static_driver
 //  CircuitMaker:   https://workspace.circuitmaker.com/Projects/Details/Andrey-Rachek/gplcdstaticdriver
 //==============================================================================================
@@ -55,68 +55,68 @@
 // 
 //==============================================================================================
 
+#ifndef GP_LCD_H
+#define GP_LCD_H
 
-
+#include "Arduino.h"
 #include <SPI.h>
-#include "gp_lcd.h"
 
-//const int chipSelectPin = 7;
-//const byte DISABLE_DIGIT = 0x0c;
+enum gpLCDsigns {
+    DISABLE_NUMBER_SIGN = 0u,
+    ENABLE_MINUS,
+    ENABLE_PLUS,
+    DISABLE_LOWBAT,
+    ENABLE_LOWBAT
+};
 
-gp_lcd LCD;//(7);
-int cnt = 0;
-const int DELAY_MS = 100;
+enum gpLCDdigits {
+    DISABLE_DIGIT = 0u,
+    DISABLE_SEMICOLON,
+    DISABLE_DECIMAL,
+    ENABLE_DIGIT,
+    ENABLE_SEMICOLON,
+    ENABLE_DECIMAL
+};
 
-//
-void setup() {
-  LCD.begin(7);
-  LCD.disableAll();
+namespace gpLCDconstants {
+    const uint8_t DIGITS_NUMBER = 5u;
+    const uint8_t DIGIT_VALUE_MASK = 0xf;
+    const uint8_t DISABLE_DIGIT_MASK = 0x0c;
+    const uint8_t DECIMAL_POINT_MASK = 0x10;
+    const uint8_t SEMICOLON_MASK = 0x20;
+    //
+    const uint8_t LOWBAT_SIGN_MASK = 0x20;      //Connected to "semicolon" bit
+    const uint8_t LOWBAT_SIGN_POSITION = 4u;    //Position "Lowbat" sign
+    const uint8_t MINUS_SIGN_MASK = 0x10;       //Connected to "decimal point" bit
+    const uint8_t PLUS_SIGN_MASK = 0x30;        //Connected to "decimal point" and "semicolon" bits
+    const uint8_t PLUS_SIGN_POSITION = 0u;      //Position sign
 }
 
-//
-void loop() {
-  for (uint8_t i = 0; i < gpLCDconstants::DIGITS_NUMBER; ++i) {
-      LCD.configDigit(ENABLE_DECIMAL, i);
-      delay(DELAY_MS);
-      LCD.configDigit(ENABLE_SEMICOLON, i);
-      delay(DELAY_MS);
-  }
-  //delay(500);
-  LCD.setSigns(ENABLE_MINUS);
-  delay(DELAY_MS);
-  LCD.setSigns(ENABLE_PLUS);
-  delay(DELAY_MS);
-  LCD.setSigns(ENABLE_LOWBAT);
-  delay(DELAY_MS);
-  //
-  for (uint8_t i = 0; i < gpLCDconstants::DIGITS_NUMBER; ++i) {
-      LCD.configDigit(ENABLE_DIGIT, i, false);
-      LCD.setDigit(cnt, i);
-      //if (cnt < 9) ++cnt;
-      //else cnt = 0u;
-      delay(DELAY_MS);
-  }
+class gp_lcd {
+    public:
+        //Configure CSB pin, configure SPI module
+        //gp_lcd(uint8_t csbPin);
+        void begin(uint8_t csbPin);
+        
+        //Drive digits, semicolons & decimal points
+        void setDigit(uint8_t value, uint8_t position, bool immediately = true);
+        void configDigit(gpLCDdigits type, uint8_t position, bool immediately = true);
+        
+        //Drive special signs
+        void setSigns(gpLCDsigns type, bool immediately = true);
+        
+        //Disable all signs
+        void disableAll(bool immediately = true);
+        
+        //Flush all data to the driver
+        void flush();
+        
+    //private: //Methods
+        
+    private: // Members
+        uint8_t _csbPin;
+        uint8_t _digitVal[gpLCDconstants::DIGITS_NUMBER]= {0};
+        bool _digitEn[gpLCDconstants::DIGITS_NUMBER]= {false};
+};
 
-  if (cnt < 9) ++cnt;
-  else cnt = 0u;
-  
-  delay(2000);
-  
-  for (uint8_t i = 0; i < gpLCDconstants::DIGITS_NUMBER; ++i) {
-      LCD.configDigit(DISABLE_DECIMAL, i);
-      delay(DELAY_MS);
-      LCD.configDigit(DISABLE_SEMICOLON, i);
-      delay(DELAY_MS);
-  }
-  //delay(500);
-  LCD.setSigns(DISABLE_NUMBER_SIGN);
-  delay(DELAY_MS);
-  LCD.setSigns(DISABLE_LOWBAT);
-  delay(DELAY_MS);
-  //
-  for (uint8_t i = 0; i < gpLCDconstants::DIGITS_NUMBER; ++i) {
-      LCD.configDigit(DISABLE_DIGIT, i);
-      delay(DELAY_MS);
-  }
-}
-
+#endif
